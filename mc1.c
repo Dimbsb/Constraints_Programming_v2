@@ -234,7 +234,7 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constr
             else if (constraint == 4)
             {
                 // (Xi / 3 == Xj / 3 && Xi % 3 < Xj % 3)
-                if ((Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] % 3 >= Xvalue[j] % 3) && (Xvalue[i] / 3 == Xvalue[j] / 3)))
+                if ((Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3)))
                 {
                     // printf("Conflict: X%d / 3 == X%d / 3 && X%d %% 3 >= X%d %% 3\n", i, j, i, j);
                     conflicts++;
@@ -259,7 +259,7 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
             if ((conflict == 1 && Xvalue[i] == Xvalue[j]) ||
                 (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) <= 2) ||
                 (conflict == 3 && (Xvalue[i] / 3) == (Xvalue[j] / 3)) ||
-                (conflict == 4 && (Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] % 3 >= Xvalue[j] % 3) && (Xvalue[i] / 3 == Xvalue[j] / 3))))
+                ((Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3))))
             {
                 count++;
                 if (rand() % count == 0)

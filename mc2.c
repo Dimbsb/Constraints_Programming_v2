@@ -94,7 +94,7 @@ int main()
 
         // Measure execution time
         clock_t start = clock();
-        double p = 0.3; // e.g p = 0.2 = 20% probability for random walk
+        double p = 0.2; // e.g p = 0.2 = 20% probability for random walk
         minConflicts(maxTries, maxChanges, Xvalue, numberofvariables, numberofvalues, outputFile, &moves, &bestCollisions, p, constraints);
         clock_t end = clock();
 
@@ -208,7 +208,6 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constr
                 // Xi != Xj
                 if (Xvalue[i] == Xvalue[j])
                 {
-                    // printf("Conflict: X%d == X%d\n", i, j);
                     conflicts++;
                 }
             }
@@ -218,7 +217,6 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constr
                 int diff = abs((Xvalue[i] / 3) - (Xvalue[j] / 3));
                 if (diff <= 2)
                 {
-                    // printf("Conflict: abs(X%d / 3 - X%d / 3) = %d <= 6\n", i, j, diff);
                     conflicts++;
                 }
             }
@@ -227,14 +225,13 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constr
                 // Xi / 3 != Xj / 3
                 if ((Xvalue[i] / 3) == (Xvalue[j] / 3))
                 {
-                    // printf("Conflict: X%d / 3 == X%d / 3\n", i, j);
                     conflicts++;
                 }
             }
             else if (constraint == 4)
             {
                 // (Xi / 3 == Xj / 3 && Xi % 3 < Xj % 3)
-                if ((Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] % 3 >= Xvalue[j] % 3) && (Xvalue[i] / 3 == Xvalue[j] / 3)))
+                if ((Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3)))
                 {
                     // printf("Conflict: X%d / 3 == X%d / 3 && X%d %% 3 >= X%d %% 3\n", i, j, i, j);
                     conflicts++;
@@ -259,7 +256,7 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
             if ((conflict == 1 && Xvalue[i] == Xvalue[j]) ||
                 (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) <= 2) ||
                 (conflict == 3 && (Xvalue[i] / 3) == (Xvalue[j] / 3)) ||
-                (conflict == 4 && (Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] % 3 >= Xvalue[j] % 3) && (Xvalue[i] / 3 == Xvalue[j] / 3))))
+                ((Xvalue[i] / 3 != Xvalue[j] / 3) || ((Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3))))
             {
                 count++;
                 if (rand() % count == 0)
@@ -314,7 +311,7 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
 
             // Calculate cost
             int currentCost = satisfies(Xvalue, numberofvariables, numberofvalues, constraints);
-            fprintf(outputFile, "Change %d: Cost = %d\n", j, currentCost);
+            fprintf(outputFile, "\nChange %d: (Cost = %d)\n", j, currentCost);
 
             if (currentCost < *bestCollisions)
             {
@@ -351,7 +348,7 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
                 // (x,a) := the alternative assignment of x which satisfies the maximum number of constraints under the current assignment A
                 newAssignment = AlternativeAssignment(Xvalue, numberofvariables, x, numberofvalues, constraints, &newCost);
                 // fprintf(outputFile, "(x,a) := the alternative assignment of x which satisfies the maximum number of constraints under the current assignment A\n"); // debugging...will be removed
-                fprintf(outputFile, "X%d better value is: %d\n", x, newAssignment);
+                fprintf(outputFile, "X%d better value is: %d  \n", x, newAssignment);
             }
 
             // make the assignment (x, a)
