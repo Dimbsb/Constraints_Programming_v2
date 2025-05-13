@@ -21,6 +21,7 @@ int main()
 
     printf("Enter the number of tries (random restarts): ");
     scanf("%d", &maxTries);
+
     if (maxTries < 1)
     {
         printf("Invalid input.\n");
@@ -63,6 +64,12 @@ int main()
         printf("ERROR OPENING TXT FILE.\n");
         return 1;
     }
+
+    fprintf(outputFile, "MAX TRIES: %d\n", maxTries);
+    fprintf(outputFile, "MAX CHANGES: %d\n", maxChanges);
+    fprintf(outputFile, "NUMBER OF DAYS: %d\n", days);
+    fprintf(outputFile, "NUMBER OF PROCEDURE RESTARTS: %d\n", PrecedureRestarts);
+    fprintf(outputFile, "----------------------------------------------\n");
 
     int constraints[73][73] = {0};
     readConstraintsMatrix("BetterCSVview.csv", constraints);
@@ -265,8 +272,7 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
 }
 
 // Function for alternative value
-int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable,
-                          int numberofvalues, int constraints[73][73], int *minConflicts)
+int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73], int *minConflicts)
 {
     int tempvalue[numberofvariables];
     memcpy(tempvalue, Xvalue, sizeof(int) * numberofvariables);
@@ -292,8 +298,7 @@ int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable
     return bestValue;
 }
 
-void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues,
-                  FILE *outputFile, int *moves, int *bestCollisions, int constraints[73][73])
+void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions, int constraints[73][73])
 {
 
     for (int i = 0; i < maxTries; i++)

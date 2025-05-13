@@ -87,6 +87,7 @@ int main()
 
   printf("Enter the number of tries (random restarts): ");
   scanf("%d", &maxTries);
+
   if (maxTries < 1)
   {
     printf("Invalid input.\n");
@@ -130,6 +131,12 @@ int main()
     free(Xvalue);
     return 1;
   }
+
+  fprintf(outputFile, "MAX TRIES: %d\n", maxTries);
+  fprintf(outputFile, "MAX CHANGES: %d\n", maxChanges);
+  fprintf(outputFile, "NUMBER OF DAYS: %d\n", days);
+  fprintf(outputFile, "NUMBER OF PROCEDURE RESTARTS: %d\n", PrecedureRestarts);
+  fprintf(outputFile, "----------------------------------------------\n");
 
   int constraints[73][73] = {0};
   readConstraintsMatrix("BetterCSVview.csv", constraints);
@@ -177,116 +184,114 @@ int main()
 
 int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile)
 {
-    // A := initial complete assignment of the variables in Problem
-    for (int i = 0; i < numberofvariables; i++)
-    {
-        Xvalue[i] = rand() % numberofvalues;
-    }
-    // Print initial assignment
-    fprintf(outputFile, "INITIAL ASSIGNMENT:\n");
-    for (int i = 0; i < numberofvariables; i++)
-    {
-        fprintf(outputFile, "X%d = %d\n", i, Xvalue[i]);
-    }
-    return Xvalue;
+  // A := initial complete assignment of the variables in Problem
+  for (int i = 0; i < numberofvariables; i++)
+  {
+    Xvalue[i] = rand() % numberofvalues;
+  }
+  // Print initial assignment
+  fprintf(outputFile, "INITIAL ASSIGNMENT:\n");
+  for (int i = 0; i < numberofvariables; i++)
+  {
+    fprintf(outputFile, "X%d = %d\n", i, Xvalue[i]);
+  }
+  return Xvalue;
 }
 
 // Read from CSV file
 void readConstraintsMatrix(const char *filename, int constraints[73][73])
 {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL)
+  FILE *file = fopen(filename, "r");
+  if (file == NULL)
+  {
+    printf("ERROR OPENING CSV FILE.\n");
+    exit(1);
+  }
+
+  char buffer[2048];
+  int row = 0;
+
+  while (fgets(buffer, sizeof(buffer), file))
+  {
+    char *token = strtok(buffer, ",");
+    int col = 0;
+
+    while (token != NULL)
     {
-        printf("ERROR OPENING CSV FILE.\n");
-        exit(1);
+      // Handle empty cells by assigning 0
+      if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0)
+      {
+        constraints[row][col] = 0;
+      }
+      else
+      {
+        constraints[row][col] = atoi(token);
+      }
+      token = strtok(NULL, ",");
+      col++;
     }
+    row++;
+  }
 
-    char buffer[2048];
-    int row = 0;
-
-    while (fgets(buffer, sizeof(buffer), file))
-    {
-        char *token = strtok(buffer, ",");
-        int col = 0;
-
-        while (token != NULL)
-        {
-            // Handle empty cells by assigning 0
-            if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0)
-            {
-                constraints[row][col] = 0;
-            }
-            else
-            {
-                constraints[row][col] = atoi(token);
-            }
-            token = strtok(NULL, ",");
-            col++;
-        }
-        row++;
-    }
-
-    fclose(file);
+  fclose(file);
 }
-
 
 // Function to check if constraints are satisfied
 int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73])
 {
-    int conflicts = 0;
- 
-    // Check constraints...The four types of constraints we have
-    for (int i = 0; i < numberofvariables; i++)
+  int conflicts = 0;
+
+  // Check constraints...The four types of constraints we have
+  for (int i = 0; i < numberofvariables; i++)
+  {
+    for (int j = i + 1; j < numberofvariables; j++)
     {
-        for (int j = i + 1; j < numberofvariables; j++)
+
+      int constraint = constraints[i][j];
+      // printf("Checking constraint between X%d and X%d: %d\n", i, j, constraint);
+
+      if (constraint == 1)
+      {
+        // Xi != Xj
+        if (Xvalue[i] == Xvalue[j])
         {
-
-            int constraint = constraints[i][j];
-            // printf("Checking constraint between X%d and X%d: %d\n", i, j, constraint);
-
-            if (constraint == 1)
-            {
-                // Xi != Xj
-                if (Xvalue[i] == Xvalue[j])
-                {
-                    // printf("Conflict: X%d == X%d\n", i, j);
-                    conflicts++;
-                }
-            }
-            else if (constraint == 2)
-            {
-                // abs(Xi / 3 - Xj / 3) > 2
-                int diff = abs((Xvalue[i] / 3) - (Xvalue[j] / 3));
-                if (diff <= 2)
-                {
-                    // printf("Conflict: abs(X%d / 3 - X%d / 3) = %d <= 6\n", i, j, diff);
-                    conflicts++;
-                }
-            }
-            else if (constraint == 3)
-            {
-                // Xi / 3 != Xj / 3
-                if ((Xvalue[i] / 3) == (Xvalue[j] / 3))
-                {
-                    // printf("Conflict: X%d / 3 == X%d / 3\n", i, j);
-                    conflicts++;
-                }
-            }
-            else if (constraint == 4)
-            {
-                // (Xi / 3 == Xj / 3 && Xi % 3 < Xj % 3)
-                if ((Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3))
-                {
-                    // printf("Conflict: X%d / 3 == X%d / 3 && X%d %% 3 >= X%d %% 3\n", i, j, i, j);
-                    conflicts++;
-                }
-            }
+          // printf("Conflict: X%d == X%d\n", i, j);
+          conflicts++;
         }
+      }
+      else if (constraint == 2)
+      {
+        // abs(Xi / 3 - Xj / 3) > 2
+        int diff = abs((Xvalue[i] / 3) - (Xvalue[j] / 3));
+        if (diff <= 2)
+        {
+          // printf("Conflict: abs(X%d / 3 - X%d / 3) = %d <= 6\n", i, j, diff);
+          conflicts++;
+        }
+      }
+      else if (constraint == 3)
+      {
+        // Xi / 3 != Xj / 3
+        if ((Xvalue[i] / 3) == (Xvalue[j] / 3))
+        {
+          // printf("Conflict: X%d / 3 == X%d / 3\n", i, j);
+          conflicts++;
+        }
+      }
+      else if (constraint == 4)
+      {
+        // (Xi / 3 == Xj / 3 && Xi % 3 < Xj % 3)
+        if ((Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3))
+        {
+          // printf("Conflict: X%d / 3 == X%d / 3 && X%d %% 3 >= X%d %% 3\n", i, j, i, j);
+          conflicts++;
+        }
+      }
     }
+  }
 
-    return conflicts; // Total number of conflicts
+  return conflicts; // Total number of conflicts
 }
-
 
 // Function for random variable with conflicts
 int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73])
@@ -300,7 +305,7 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
       if (i == j)
         continue;
       int conflict = constraints[i][j];
-      if ((conflict == 1 && Xvalue[i] == Xvalue[j]) || (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) < 2) ||
+      if ((conflict == 1 && Xvalue[i] == Xvalue[j]) || (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) <= 2) ||
           (conflict == 3 && (Xvalue[i] / 3) == (Xvalue[j] / 3)) || (conflict == 4 && (Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3)))
       {
         list[count++] = i;
@@ -314,30 +319,29 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
 // Function for alternative value
 int AlternativeAssignment(int *Xvalue, int numberofvariables, int x, int numberofvalues, TabuQueue *TabuList, int *bestConflicts, int constraints[73][73], int *bestCost)
 {
-    int bestValue = Xvalue[x];
-    int minConflicts = INT_MAX;
-    int original = Xvalue[x];
+  int bestValue = Xvalue[x];
+  int minConflicts = INT_MAX;
+  int original = Xvalue[x];
 
-    for (int i = 1; i <= numberofvalues; i++)
+  for (int i = 1; i <= numberofvalues; i++)
+  {
+    if (i == original)
+      continue;
+    Xvalue[x] = i;
+    int conflict = satisfies(Xvalue, numberofvariables, numberofvalues, constraints);
+    if (!isInTabuList(TabuList, x, i) || conflict < *bestConflicts)
     {
-        if (i == original)
-            continue;
-        Xvalue[x] = i;
-        int conflict = satisfies(Xvalue, numberofvariables, numberofvalues, constraints);
-        if (!isInTabuList(TabuList, x, i) || conflict < *bestConflicts)
-        {
-            if (conflict < minConflicts)
-            {
-                minConflicts = conflict;
-                bestValue = i;
-            }
-        }
+      if (conflict < minConflicts)
+      {
+        minConflicts = conflict;
+        bestValue = i;
+      }
     }
-    Xvalue[x] = original;
-    *bestCost = minConflicts;  // Store the best conflicts
-    return bestValue;
+  }
+  Xvalue[x] = original;
+  *bestCost = minConflicts; // Store the best conflicts
+  return bestValue;
 }
-
 
 // Tabu Search
 void Tabu_Min_Conflicts(int *Xvalue, int numberofvariables, int numberofvalues, int maxTries, int maxChanges, TabuQueue *TabuList, FILE *outputFile, int *moves, int *bestConflicts, int constraints[73][73])

@@ -64,6 +64,12 @@ int main()
         return 1;
     }
 
+    fprintf(outputFile, "MAX TRIES: %d\n", maxTries);
+    fprintf(outputFile, "MAX CHANGES: %d\n", maxChanges);
+    fprintf(outputFile, "NUMBER OF DAYS: %d\n", days);
+    fprintf(outputFile, "NUMBER OF PROCEDURE RESTARTS: %d\n", PrecedureRestarts);
+    fprintf(outputFile, "----------------------------------------------\n");
+
     int constraints[73][73] = {0};
     readConstraintsMatrix("BetterCSVview.csv", constraints);
 
