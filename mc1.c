@@ -9,7 +9,7 @@
 void readConstraintsMatrix(const char *filename, int constraints[73][73]);
 int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73]);
 int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73]);
-int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73]);
+int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73], int *bestCost);
 void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions, int constraints[73][73]);
 int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile);
 
@@ -18,42 +18,42 @@ int main()
     int maxTries, maxChanges, days, PrecedureRestarts;
     int numberofvariables = 73;
     int Xvalue[numberofvariables]; // X1, X2, ..., X70...values...Practically X1, X2, ..., X70
-    
+
     printf("Enter the number of tries (random restarts): ");
     scanf("%d", &maxTries);
-    if(maxTries < 1)
+    if (maxTries < 1)
     {
         printf("Invalid input.\n");
         printf("Enter the number of tries (random restarts): ");
-        scanf("%d", &maxTries);  
+        scanf("%d", &maxTries);
     }
 
     printf("Enter the number of changes (maxChanges): ");
     scanf("%d", &maxChanges);
-    if(maxChanges < 1)
+    if (maxChanges < 1)
     {
         printf("Invalid input.\n");
         printf("Enter the number of changes (maxChanges): ");
-        scanf("%d", &maxChanges);  
+        scanf("%d", &maxChanges);
     }
 
     printf("Enter the number of days: ");
     scanf("%d", &days);
-    if(days < 1)
+    if (days < 1)
     {
         printf("Invalid input.\n");
         printf("Enter the number of days: ");
-        scanf("%d", &days);  
+        scanf("%d", &days);
     }
     int numberofvalues = days * 3; // Timeslots = days * 3
 
     printf("Enter the number of procedure restarts: ");
     scanf("%d", &PrecedureRestarts);
-    if(PrecedureRestarts < 1)
+    if (PrecedureRestarts < 1)
     {
         printf("Invalid input.\n");
         printf("Enter the number of procedure restarts: ");
-        scanf("%d", &PrecedureRestarts);  
+        scanf("%d", &PrecedureRestarts);
     }
 
     // Open file to save results
@@ -250,7 +250,7 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
         {
             int conflict = constraints[i][j];
             if ((conflict == 1 && Xvalue[i] == Xvalue[j]) ||
-                (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) < 2) ||
+                (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) <= 2) ||
                 (conflict == 3 && (Xvalue[i] / 3) == (Xvalue[j] / 3)) ||
                 (conflict == 4 && (Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3)))
             {
@@ -265,16 +265,16 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
 }
 
 // Function for alternative value
-int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73])
+int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable,
+                          int numberofvalues, int constraints[73][73], int *minConflicts)
 {
     int tempvalue[numberofvariables];
     memcpy(tempvalue, Xvalue, sizeof(int) * numberofvariables);
     int bestValue = tempvalue[variable];
-    int minConflicts = INT_MAX;
+    *minConflicts = INT_MAX;
 
     for (int value = 0; value < numberofvalues; value++)
     {
-
         if (value == tempvalue[variable])
             continue;
 
@@ -282,9 +282,9 @@ int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable
 
         int conflicts = satisfies(tempvalue, numberofvariables, numberofvalues, constraints);
 
-        if (conflicts < minConflicts)
+        if (conflicts < *minConflicts)
         {
-            minConflicts = conflicts;
+            *minConflicts = conflicts;
             bestValue = value;
         }
     }
@@ -292,7 +292,8 @@ int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable
     return bestValue;
 }
 
-void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions, int constraints[73][73])
+void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues,
+                  FILE *outputFile, int *moves, int *bestCollisions, int constraints[73][73])
 {
 
     for (int i = 0; i < maxTries; i++)
@@ -301,6 +302,7 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
         // Initialize the assignment
         // A := initial complete assignment of the variables in Problem
         Xvalue = initialize(Xvalue, numberofvariables, numberofvalues, outputFile);
+
         for (int j = 0; j < maxChanges; j++)
         { //  for j:=1 to maxChanges do
             (*moves)++;
@@ -329,20 +331,16 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
             int x = RandomVariableConflict(Xvalue, numberofvariables, numberofvalues, constraints);
 
             // (x,a) := alternative assignment of x which satisfies the maximum number of constraints under the current assignment A
-            int newAssignment = AlternativeAssignment(Xvalue, numberofvariables, x, numberofvalues, constraints);
+            int CurrentValue = Xvalue[x];
+            int newCost;
+            int newAssignment = AlternativeAssignment(Xvalue, numberofvariables, x, numberofvalues, constraints, &newCost);
 
             // if by making assignment (x,a) you get a cost ≤ current cost then make the assignment
-            int CurrentValue = Xvalue[x];
-            Xvalue[x] = newAssignment;
-            int newCost = satisfies(Xvalue, numberofvariables, numberofvalues, constraints);
-
-            // Go to (x,a)
             if (newCost <= currentCost)
             { // cost ≤ current cost
                 Xvalue[x] = newAssignment;
                 fprintf(outputFile, "Variable X%d assigned new value %d (Cost = %d)\n", x, newAssignment, newCost);
             }
-
             else
             {
                 // Go to CurrentValue
@@ -350,6 +348,7 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
                 fprintf(outputFile, "Variable X%d reverted to value %d (Cost = %d)\n", x, CurrentValue, currentCost);
             }
         }
+
         // Print the assignment after all maxChanges
         fprintf(outputFile, "Assignment after maxChanges:\n");
         for (int k = 0; k < numberofvariables; k++)

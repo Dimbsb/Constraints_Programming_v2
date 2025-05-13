@@ -9,7 +9,7 @@
 void readConstraintsMatrix(const char *filename, int constraints[73][73]);
 int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73]);
 int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73]);
-int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73]);
+int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73], int *minConflicts);
 void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions, double p, int constraints[73][73]);
 int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile);
 
@@ -187,7 +187,7 @@ void readConstraintsMatrix(const char *filename, int constraints[73][73])
 int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73])
 {
     int conflicts = 0;
- 
+
     // Check constraints...The four types of constraints we have
     for (int i = 0; i < numberofvariables; i++)
     {
@@ -251,7 +251,7 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
         {
             int conflict = constraints[i][j];
             if ((conflict == 1 && Xvalue[i] == Xvalue[j]) ||
-                (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) < 2) ||
+                (conflict == 2 && abs((Xvalue[i] / 3) - (Xvalue[j] / 3)) <= 2) ||
                 (conflict == 3 && (Xvalue[i] / 3) == (Xvalue[j] / 3)) ||
                 (conflict == 4 && (Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3)))
             {
@@ -266,16 +266,15 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
 }
 
 // Function for alternative value
-int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73])
+int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues, int constraints[73][73], int *minConflicts)
 {
     int tempvalue[numberofvariables];
     memcpy(tempvalue, Xvalue, sizeof(int) * numberofvariables);
     int bestValue = tempvalue[variable];
-    int minConflicts = INT_MAX;
+    *minConflicts = INT_MAX;
 
     for (int value = 0; value < numberofvalues; value++)
     {
-
         if (value == tempvalue[variable])
             continue;
 
@@ -283,9 +282,9 @@ int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable
 
         int conflicts = satisfies(tempvalue, numberofvariables, numberofvalues, constraints);
 
-        if (conflicts < minConflicts)
+        if (conflicts < *minConflicts)
         {
-            minConflicts = conflicts;
+            *minConflicts = conflicts;
             bestValue = value;
         }
     }
@@ -331,6 +330,7 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
             int x = RandomVariableConflict(Xvalue, numberofvariables, numberofvalues, constraints);
 
             int newAssignment;
+            int newCost = INT_MAX;
             int randomNumber = rand() % 100 + 1; // Random number between 1 and 100
             fprintf(outputFile, "(Random Number: %d)\n", randomNumber);
             if (randomNumber <= (int)(p * 100)) // if probability p verified (e.g i give 10%...if randomNumber <= 10 then p is verified)
@@ -343,7 +343,7 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
             else
             {
                 // (x,a) := the alternative assignment of x which satisfies the maximum number of constraints under the current assignment A
-                newAssignment = AlternativeAssignment(Xvalue, numberofvariables, x, numberofvalues, constraints);
+                newAssignment = AlternativeAssignment(Xvalue, numberofvariables, x, numberofvalues, constraints, &newCost);
                 // fprintf(outputFile, "(x,a) := the alternative assignment of x which satisfies the maximum number of constraints under the current assignment A\n"); // debugging...will be removed
                 fprintf(outputFile, "X%d better value is: %d\n", x, newAssignment);
             }

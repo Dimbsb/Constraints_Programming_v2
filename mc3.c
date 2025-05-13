@@ -28,7 +28,7 @@ int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *ou
 void readConstraintsMatrix(const char *filename, int constraints[73][73]);
 int satisfies(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73]);
 int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalues, int constraints[73][73]);
-int AlternativeAssignment(int *Xvalue, int numberofvariables, int x, int numberofvalues, TabuQueue *TabuList, int *bestConflicts, int constraints[73][73]);
+int AlternativeAssignment(int *Xvalue, int numberofvariables, int x, int numberofvalues, TabuQueue *TabuList, int *bestConflicts, int constraints[73][73], int *bestCost);
 void Tabu_Min_Conflicts(int *Xvalue, int numberofvariables, int numberofvalues, int maxTries, int maxChanges, TabuQueue *TabuList, FILE *outputFile, int *moves, int *bestConflicts, int constraints[73][73]);
 
 // queue initialize
@@ -312,30 +312,32 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
 }
 
 // Function for alternative value
-int AlternativeAssignment(int *Xvalue, int numberofvariables, int x, int numberofvalues, TabuQueue *TabuList, int *bestConflicts, int constraints[73][73])
+int AlternativeAssignment(int *Xvalue, int numberofvariables, int x, int numberofvalues, TabuQueue *TabuList, int *bestConflicts, int constraints[73][73], int *bestCost)
 {
-  int bestValue = Xvalue[x];
-  int minConflicts = INT_MAX;
-  int original = Xvalue[x];
+    int bestValue = Xvalue[x];
+    int minConflicts = INT_MAX;
+    int original = Xvalue[x];
 
-  for (int i = 1; i <= numberofvalues; i++)
-  {
-    if (i == original)
-      continue;
-    Xvalue[x] = i;
-    int conflict = satisfies(Xvalue, numberofvariables, numberofvalues, constraints);
-    if (!isInTabuList(TabuList, x, i) || conflict < *bestConflicts)
+    for (int i = 1; i <= numberofvalues; i++)
     {
-      if (conflict < minConflicts)
-      {
-        minConflicts = conflict;
-        bestValue = i;
-      }
+        if (i == original)
+            continue;
+        Xvalue[x] = i;
+        int conflict = satisfies(Xvalue, numberofvariables, numberofvalues, constraints);
+        if (!isInTabuList(TabuList, x, i) || conflict < *bestConflicts)
+        {
+            if (conflict < minConflicts)
+            {
+                minConflicts = conflict;
+                bestValue = i;
+            }
+        }
     }
-  }
-  Xvalue[x] = original;
-  return bestValue;
+    Xvalue[x] = original;
+    *bestCost = minConflicts;  // Store the best conflicts
+    return bestValue;
 }
+
 
 // Tabu Search
 void Tabu_Min_Conflicts(int *Xvalue, int numberofvariables, int numberofvalues, int maxTries, int maxChanges, TabuQueue *TabuList, FILE *outputFile, int *moves, int *bestConflicts, int constraints[73][73])
@@ -371,13 +373,15 @@ void Tabu_Min_Conflicts(int *Xvalue, int numberofvariables, int numberofvalues, 
 
       int variable = RandomVariableConflict(Xvalue, numberofvariables, numberofvalues, constraints);
       int previous = Xvalue[variable];
-      int newVal = AlternativeAssignment(Xvalue, numberofvariables, variable, numberofvalues, TabuList, bestConflicts, constraints);
+      int newVal;
+      int bestCost = INT_MAX;
+      newVal = AlternativeAssignment(Xvalue, numberofvariables, variable, numberofvalues, TabuList, bestConflicts, constraints, &bestCost);
 
       Xvalue[variable] = newVal;
       addToTabuList(TabuList, previous, variable);
       (*moves)++;
 
-      fprintf(outputFile, "X%d changed from %d to %d. Conflicts: %d\n", variable, previous, newVal, satisfies(Xvalue, numberofvariables, numberofvalues, constraints));
+      fprintf(outputFile, "X%d changed from %d to %d. Conflicts: %d\n", variable, previous, newVal, bestCost);
     }
   }
 
